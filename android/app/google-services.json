@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "108003629227",
+    "project_id": "interntest-26fef",
+    "storage_bucket": "interntest-26fef.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:108003629227:android:e71ec5b97a4d6f272affee",
+        "android_client_info": {
+          "package_name": "com.example.driverrequirements"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "108003629227-5qr99ofjuleq43d6uid83f71u3p6qtjv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjcWefhIwgsRioBLRp7qjmqqZtLQB31UA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "108003629227-5qr99ofjuleq43d6uid83f71u3p6qtjv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
