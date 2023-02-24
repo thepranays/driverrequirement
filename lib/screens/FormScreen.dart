@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:date_time_picker/date_time_picker.dart';
 import 'package:driverrequirements/constants/constants.dart';
 
 import 'package:flutter/material.dart';
@@ -29,6 +30,7 @@ class _FormScreenState extends State<FormScreen> {
   final TextEditingController _dateController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
   var dropDownValue; //default value of vehicle
+
 
   //On Submission of form
   Future<void> submitForm() async{
@@ -106,10 +108,10 @@ class _FormScreenState extends State<FormScreen> {
     );
 
     if(pickedTime != null ){
-      DateTime parsedTime = DateFormat.jm().parse(pickedTime.format(context).toString());
-      String formattedTime = DateFormat('HH:mm').format(parsedTime);
-       //output 14:59:00
       setState(() {
+        DateTime parsedTime = DateFormat.jm().parse(pickedTime.format(context).toString());
+        String formattedTime = DateFormat('HH:mm').format(parsedTime);
+        //output 14:59:00
         _timeController.text =formattedTime;
       });
     }
@@ -187,7 +189,7 @@ Future<void> pickADate(BuildContext context) async {
   //Form Widget
   Widget formWidget(){
     return Container(
-      margin:const EdgeInsets.all(20),
+      margin:const EdgeInsets.all(25),
       child: RawScrollbar(
         child: SingleChildScrollView(
           child: Padding(
@@ -237,28 +239,37 @@ Future<void> pickADate(BuildContext context) async {
                 ,decoration:const InputDecoration(labelText:"TO"
                     ,labelStyle:TextStyle(color:Colors.black)),
                   controller:_toLocation ,maxLength:20,),
-                TextFormField(
-                    controller: _dateController,
-                    decoration: const InputDecoration(
-                        icon: Icon(Icons.calendar_today),
-                        labelText: "Enter Date"
-                    ),
-                    readOnly: true,
-                    onTap: ()  {
-                            pickADate(context); // to open calendar to select date
-                    }
+            DateTimePicker(
+              initialValue:DateTime.now().toString(),
+              dateMask: "d MMM, yyyy",
+              icon:const Icon(Icons.calendar_today),
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+              dateLabelText: 'Date',
+              onChanged: (val) => setState(() {
+                _dateController.text=val;
+              }),
+
+              onSaved: (val) =>setState(() {
+                _dateController.text=val!;
+              }),
+            ),
+
+                DateTimePicker(
+                  type: DateTimePickerType.time,
+                  initialValue:DateFormat.Hm().format(DateTime.now()),
+            
+                  icon: const Icon(Icons.timer),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                  timeLabelText: 'Hour',
+                  onChanged: (val) => setState(() {
+                    _timeController.text=val;
+                  }),
+                  onSaved: (val) => setState(() {
+                    _timeController.text=val!;
+                  }),
                 ),
-              TextFormField(
-                controller: _timeController,
-                decoration: const InputDecoration(
-                    icon: Icon(Icons.timer),
-                    labelText: "Enter Time" ,
-                ),
-                readOnly: true,
-                onTap:(){
-                  pickATime(context);
-                }
-              ),
 
                 //DROPDOWN
                 Padding(padding: const EdgeInsets.only(top:20,bottom: 5),child: dropDownOption(context)),
