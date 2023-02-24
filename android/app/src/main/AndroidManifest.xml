@@ -38,6 +38,13 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+<!--   Setting default notification icon and its color and default notification channel id-->
+       <meta-data
+           android:name="com.google.firebase.messaging.default_notification_icon"
+           android:resource="@drawable/ic_truck" />
+       <meta-data
+           android:name="com.google.firebase.messaging.default_notification_color"
+           android:resource="@color/primary_color" />
        <meta-data
            android:name="com.google.firebase.messaging.default_notification_channel_id"
            android:value="high_importance_channel" />

@@ -1,3 +1,6 @@
+import 'dart:ffi';
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:driverrequirements/screens/FormScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -5,8 +8,19 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'constants/constants.dart';
+import 'package:http/http.dart' as http;
 
 
+
+//Android Notification Plugins and channel variables
+late AndroidNotificationChannel channel;
+late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
+bool isFlutterLocalNotificationsInitialized=false;
+AndroidInitializationSettings initializationSettingsAndroid =
+const AndroidInitializationSettings('mipmap/ic_truck');
+
+//Keys
+GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -15,15 +29,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print("Handling background message: ${message.messageId}");
 }
 
-//Android Notification Plugins and channel variables
-late AndroidNotificationChannel channel;
-late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
-bool isFlutterLocalNotificationsInitialized=false;
-const AndroidInitializationSettings initializationSettingsAndroid =
-AndroidInitializationSettings('@mipmap/caricon');
 
-//Keys
-GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   //To ensure native firebase is initialized before running the flutter app
@@ -31,7 +37,9 @@ void main() async {
   //Firebase initialization
   await Firebase.initializeApp();
   //To Receive Notification when app is running in background
+
   // FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   //Setting up push notification
   await setupPushNotification();
   //On push notification is received show local flutter notification
@@ -69,6 +77,7 @@ Future<void> setupPushNotification() async{
     'Priority0 Notification', // title
     description: 'Driver Requirement Alert', // description
     importance: Importance.max,
+    playSound: true,
   );
 
   //initialize flutterlocalnotification plugin and create notification channel
@@ -84,10 +93,26 @@ Future<void> setupPushNotification() async{
   isFlutterLocalNotificationsInitialized = true;
 }
 
+//used to get image byte array from url provided
+Future<Uint8List> _getByteArrayFromUrl(String url) async {
+  final http.Response response = await http.get(Uri.parse(url));
+  return response.bodyBytes;
+}
+
 //Show notification using FLN (Flutter Local Notification Plugin)
-void showFlutterNotification(RemoteMessage message) {
+void showFlutterNotification(RemoteMessage message) async {
   RemoteNotification? notification = message.notification;
+  Map<String,dynamic>? data = message.data;
   AndroidNotification? android = message.notification?.android;
+
+
+  //to convert byte array to bitmap
+  final ByteArrayAndroidBitmap bigPicture = ByteArrayAndroidBitmap(
+      await _getByteArrayFromUrl(message.data["image"]));
+
+
+
+  //if notification belongs to android then execute->
   if (notification != null && android != null) {
     flutterLocalNotificationsPlugin.show(
       notification.hashCode,
@@ -98,17 +123,24 @@ void showFlutterNotification(RemoteMessage message) {
           channel.id,
           channel.name,
           channelDescription: channel.description,
-          icon:"@mipmap/caricon",
           enableVibration: true,
+          styleInformation: BigTextStyleInformation(
+            "Expected at "+data["timedate"],
+            contentTitle:notification.body! +"-"+ data["dist"],
+
+          ),
+          largeIcon: bigPicture,
+          icon: "mipmap/ic_truck",
           playSound: true,
+          priority: Priority.max,
+          importance: Importance.max,
+          color: Colors.indigo
 
         ),
       ),
     );
   }
 }
-//Navigator.of(navigatorKey.currentState!.context).pushReplacement(MaterialPageRoute(builder: (BuildContext context)=>MyApp()));
-
 
 
 class MyApp extends StatelessWidget {
@@ -122,7 +154,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
 
 
-        primarySwatch: Colors.red,
+        primarySwatch: Colors.indigo,
       ),
       home: const MyHomePage(title: AppConstants.appTitle),
     );
@@ -158,11 +190,11 @@ class _MyHomePageState extends State<MyHomePage> {
       body:
         SafeArea(
           child:StreamBuilder<QuerySnapshot>(
-            stream: db.collection(AppConstants.driverRequestCollec).snapshots(),
+            stream: db.collection(AppConstants.driverRequestCollec).orderBy('datetime', descending: false).snapshots(),
                 builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                     return const Center(
-                    child: CircularProgressIndicator(),
+                    child: CircularProgressIndicator(),//While fetching snapshot
                     );
                 } else {
                   return ListView.builder(
@@ -170,7 +202,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   shrinkWrap: true,
                   physics: const ClampingScrollPhysics(),
                   itemBuilder: (context, index) {
-                    final icon;
+                    //To select appropriate vehicle symbol for UI
+                    final Icon icon;
                     switch(snapshot.data!.docs[index]["vehicle"]){
                       case "Bike":
                         icon = const Icon(Icons.electric_bike_outlined);
@@ -187,7 +220,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     }
                   return Card(
                     elevation: 15,
-                    child: ListTile(
+                    child: ExpansionTile(
                       leading: icon,
                       title: Row(
                         children: [
@@ -195,7 +228,13 @@ class _MyHomePageState extends State<MyHomePage> {
                           const Icon(Icons.arrow_forward_outlined),
                           Text(snapshot.data!.docs[index]["to"].toString().toUpperCase(),style:const TextStyle(color:Colors.black,fontWeight:FontWeight.bold),),
                         ],
-                      ),trailing: Text(snapshot.data!.docs[index]["vehicle"]),
+                      ),
+                      children: <Widget>[
+                        ListTile(title:Text("Expected at "+snapshot.data!.docs[index]["date"]+" | "+snapshot.data!.docs[index]["time"]),
+                            subtitle: Text("Estimated Distance:"+snapshot.data!.docs[index]["dist"]),
+                            trailing: Text(snapshot.data!.docs[index]["vehicle"])),
+                      ],
+
                     ),
                   );
                   });
